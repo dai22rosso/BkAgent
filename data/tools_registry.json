@@ -1,0 +1,109 @@
+{
+  "tools": [
+    {
+      "name": "web_search",
+      "description": "Search the web for information. Returns a list of search results with titles, snippets, and URLs.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {"type": "string", "description": "Search query"}
+        },
+        "required": ["query"]
+      },
+      "returns": "List of {title, snippet, url} objects"
+    },
+    {
+      "name": "get_weather",
+      "description": "Get current weather information for a given city.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {"type": "string", "description": "City name"},
+          "unit": {"type": "string", "enum": ["celsius", "fahrenheit"], "default": "celsius"}
+        },
+        "required": ["city"]
+      },
+      "returns": "{temperature, condition, humidity, wind_speed}"
+    },
+    {
+      "name": "query_database",
+      "description": "Execute a read-only SQL query against the application database.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sql": {"type": "string", "description": "SQL SELECT query"},
+          "database": {"type": "string", "description": "Database name"}
+        },
+        "required": ["sql", "database"]
+      },
+      "returns": "Query results as list of row dicts"
+    },
+    {
+      "name": "send_email",
+      "description": "Send an email to a specified recipient.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "to": {"type": "string", "description": "Recipient email address"},
+          "subject": {"type": "string", "description": "Email subject"},
+          "body": {"type": "string", "description": "Email body content"}
+        },
+        "required": ["to", "subject", "body"]
+      },
+      "returns": "{status: 'sent', message_id: string}"
+    },
+    {
+      "name": "get_stock_price",
+      "description": "Get current stock price and basic financial data for a given ticker symbol.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ticker": {"type": "string", "description": "Stock ticker symbol (e.g., AAPL)"},
+          "include_history": {"type": "boolean", "default": false, "description": "Include 30-day price history"}
+        },
+        "required": ["ticker"]
+      },
+      "returns": "{price, change, change_percent, volume, market_cap}"
+    },
+    {
+      "name": "file_manager",
+      "description": "Read, write, list, or delete files in the user's workspace.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {"type": "string", "enum": ["read", "write", "list", "delete"]},
+          "path": {"type": "string", "description": "File path"},
+          "content": {"type": "string", "description": "Content to write (for write action)"}
+        },
+        "required": ["action", "path"]
+      },
+      "returns": "Depends on action: file content, status, or file list"
+    },
+    {
+      "name": "calculator",
+      "description": "Perform mathematical calculations.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "expression": {"type": "string", "description": "Mathematical expression to evaluate"}
+        },
+        "required": ["expression"]
+      },
+      "returns": "{result: number}"
+    },
+    {
+      "name": "translate_text",
+      "description": "Translate text between languages.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "text": {"type": "string", "description": "Text to translate"},
+          "source_lang": {"type": "string", "description": "Source language code (e.g., en, zh, fr)"},
+          "target_lang": {"type": "string", "description": "Target language code"}
+        },
+        "required": ["text", "target_lang"]
+      },
+      "returns": "{translated_text: string, confidence: float}"
+    }
+  ]
+}
