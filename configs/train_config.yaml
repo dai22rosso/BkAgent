@@ -1,0 +1,90 @@
+# =============================================================================
+# Triage Agent — GRPO Training Configuration
+# Compatible with verl 0.5.0
+# =============================================================================
+
+# ---- Model Configuration ----
+model:
+  path: ~/models/Qwen3-4B-Instruct
+  # LoRA configuration
+  lora_rank: 64
+  lora_alpha: 128
+  lora_dropout: 0.05
+  lora_target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+# ---- GRPO Training ----
+training:
+  algorithm: grpo
+  rollouts_per_prompt: 8          # K rollouts per prompt for GRPO group
+  max_epochs: 3                   # Training epochs over full dataset
+  learning_rate: 1.0e-6           # Conservative LR for GRPO on small model
+  batch_size: 4                   # Prompts per batch (×8 rollouts = 32 trajectories)
+  gradient_accumulation_steps: 2
+  max_grad_norm: 1.0
+  warmup_ratio: 0.1
+  kl_coeff: 0.05                  # KL penalty coefficient
+  # Scheduler
+  scheduler: cosine
+  min_lr_ratio: 0.1
+  # Checkpointing
+  save_strategy: steps
+  save_steps: 50
+  save_total_limit: 3             # Keep last 3 checkpoints
+
+# ---- Environment Configuration ----
+environment:
+  max_turns: 12                   # Max turns per episode (轻量版=10, 完整版=12)
+  max_backtrack: 3                # Max backtracks per episode
+  max_replan: 1                   # Max replans per episode (replan is expensive)
+  # Reward weights
+  reward_alpha: 0.5               # Safety reward weight. Ablation: {0, 0.3, 0.5, 0.7, 1.0}
+  reward_format_weight: 0.3       # Format reward weight
+
+# ---- Data ----
+data:
+  train_path: data/train_demo.jsonl
+  tools_registry: data/tools_registry.json
+  # In production, add:
+  # eval_path: data/eval.jsonl
+  # safety_eval_path: data/agentharm_subset.jsonl
+
+# ---- Inference (vLLM) ----
+inference:
+  max_tokens: 1024
+  temperature: 0.7
+  top_p: 0.9
+  gpu_memory_utilization: 0.8
+  max_model_len: 4096
+  # Stop tokens — close tags for all 6 action types
+  stop_tokens:
+    - "</tool_call>"
+    - "</final_answer>"
+    - "</backtrack>"
+    - "</replan>"
+    - "</refuse>"
+    - "</ask_clarify>"
+
+# ---- Output ----
+output:
+  dir: output/grpo_triage
+  log_steps: 10
+  save_steps: 50
+  # Logging
+  use_wandb: false                # Set true for production
+  wandb_project: triage-agent
+  wandb_run_name: grpo_demo
+
+# ---- Hardware ----
+hardware:
+  gpus: 8                         # 8× RTX 3090
+  # For demo, can run on 1-2 GPUs:
+  # gpus: 1
+  gradient_checkpointing: true
+  bf16: true

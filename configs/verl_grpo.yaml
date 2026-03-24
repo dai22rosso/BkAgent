@@ -1,0 +1,98 @@
+# =============================================================================
+# verl 0.5.0 Hydra Configuration — GRPO with Custom Tool Environment
+#
+# This config follows verl's native Hydra config structure.
+# Run with: python -m verl.trainer.main_ppo +config=configs/verl_grpo.yaml
+#
+# Key verl concepts:
+# - actor_rollout_ref: the model that generates rollouts + is trained
+# - reward_model: replaced by our custom reward function
+# - env: our TriageToolEnv
+# =============================================================================
+
+# ---- Algorithm ----
+algorithm:
+  name: grpo
+  grpo:
+    num_generations: 8            # K rollouts per prompt
+    kl_coeff: 0.05
+    clip_ratio: 0.2
+    entropy_coeff: 0.01
+    value_coeff: 0.5
+
+# ---- Actor Model ----
+actor_rollout_ref:
+  model:
+    path: ~/models/Qwen3-4B-Instruct
+    enable_gradient_checkpointing: true
+  # LoRA
+  peft:
+    peft_type: lora
+    r: 64
+    lora_alpha: 128
+    lora_dropout: 0.05
+    target_modules:
+      - q_proj
+      - k_proj
+      - v_proj
+      - o_proj
+      - gate_proj
+      - up_proj
+      - down_proj
+  # Generation config for rollouts
+  generation:
+    max_new_tokens: 1024
+    temperature: 0.7
+    top_p: 0.9
+    do_sample: true
+    # Multi-turn: we handle stop tokens in the env
+  # Optimization
+  optim:
+    lr: 1.0e-6
+    weight_decay: 0.01
+    warmup_ratio: 0.1
+
+# ---- Reward ----
+# verl supports custom reward functions via reward_fn
+# We register our TriageRewardFunction here
+custom_reward:
+  module: rewards.triage_reward
+  class: TriageRewardFunction
+  kwargs:
+    alpha: 0.5
+    format_weight: 0.3
+
+# ---- Environment ----
+# verl's ToolEnv abstraction — we extend it
+custom_env:
+  module: envs.triage_tool_env
+  class: TriageToolEnv
+  kwargs:
+    max_turns: 12
+    max_backtrack: 3
+    max_replan: 1
+    reward_alpha: 0.5
+    tools_registry_path: data/tools_registry.json
+
+# ---- Data ----
+data:
+  train_files:
+    - data/train_demo.jsonl
+  max_prompt_length: 2048
+  max_response_length: 1024
+  # Shuffle
+  shuffle: true
+
+# ---- Trainer ----
+trainer:
+  total_epochs: 3
+  save_freq: 50
+  log_freq: 10
+  project_name: triage-agent
+  experiment_name: grpo_4action_safety
+  output_dir: output/grpo_triage
+
+# ---- Resource ----
+resource:
+  num_gpus: 8
+  gpu_memory_utilization: 0.8
